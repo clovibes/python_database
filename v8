@@ -1,0 +1,114 @@
+import subprocess
+import sqlite3
+import os
+import tkinter as tk
+from tkinter import filedialog
+from getpass import getpass
+from fpdf import FPDF
+from docx import Document
+import PyPDF2
+
+DATABASE_FILE = 'data.db'
+EXPORT_FOLDER = 'export'
+IMPORT_FOLDER = 'import'
+
+def create_database():
+    conn = sqlite3.connect(DATABASE_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS entries
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                 category TEXT,
+                 title TEXT, 
+                 username TEXT, 
+                 password TEXT,
+                 website TEXT,
+                 important_date TEXT,
+                 credit_card TEXT,
+                 secret TEXT,
+                 calendar_event TEXT,
+                 contact_info TEXT,
+                 device_username TEXT,
+                 device_password TEXT,
+                 birthday TEXT)''')
+    conn.commit()
+    conn.close()
+
+def add_entry(category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday, editor):
+    if editor == "1":
+        with open("entry.txt", "w") as f:
+            f.write(f"Category: {category}\n")
+            f.write(f"Title: {title}\n")
+            f.write(f"Username: {username}\n")
+            f.write(f"Password: {password}\n")
+            f.write(f"Website: {website}\n")
+            f.write(f"Important Date: {important_date}\n")
+            f.write(f"Credit Card Information: {credit_card}\n")
+            f.write(f"Secret: {secret}\n")
+            f.write(f"Calendar Event: {calendar_event}\n")
+            f.write(f"Contact Information: {contact_info}\n")
+            f.write(f"Device Username: {device_username}\n")
+            f.write(f"Device Password: {device_password}\n")
+            f.write(f"Birthday: {birthday}\n")
+        subprocess.run(["nano", "entry.txt"])
+        with open("entry.txt", "r") as f:
+            lines = f.readlines()
+            entry = [line.split(": ")[1].strip() for line in lines]
+    elif editor == "2":
+        subprocess.run(["gedit", "entry.txt"])
+        with open("entry.txt", "r") as f:
+            lines = f.readlines()
+            entry = [line.split(": ")[1].strip() for line in lines]
+    # Add options for other editors as needed
+    return entry
+
+# Remaining functions...
+
+def main():
+    create_database()
+    username = input("Enter username: ")
+    password = getpass("Enter password: ")
+    if not authenticate(username, password):
+        print("Incorrect username or password. Access denied.")
+        return
+
+    print("Welcome, " + username + "!")
+    while True:
+        print("\nChoose an option:")
+        print("1. Add new entry")
+        print("2. Retrieve entry")
+        print("3. Export retrieved entry")
+        print("4. Import entry")
+        print("5. Exit")
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            print("Choose how to enter the information:")
+            print("1. Nano (Terminal text editor)")
+            print("2. Default system text editor (e.g., gedit)")
+            # Add options for other editors as needed
+            editor_choice = input("Enter your choice: ")
+            category = input("Enter category: ")
+            title = input("Enter title: ")
+            username = input("Enter username: ")
+            password = getpass("Enter password: ")
+            website = input("Enter website: ")
+            important_date = input("Enter important date: ")
+            credit_card = input("Enter credit card information: ")
+            secret = input("Enter secret information: ")
+            calendar_event = input("Enter calendar event: ")
+            contact_info = input("Enter contact information: ")
+            device_username = input("Enter device username: ")
+            device_password = getpass("Enter device password: ")
+            birthday = input("Enter birthday: ")
+            entry = add_entry(category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday, editor_choice)
+            add_entry(*entry)
+            print("Entry added successfully!")
+        # Remaining options...
+        elif choice == "5":
+            print("Exiting program.")
+            break
+        else:
+            print("Invalid choice.")
+
+if __name__ == "__main__":
+    main()
