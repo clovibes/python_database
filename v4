@@ -1,0 +1,100 @@
+import sqlite3
+import os
+
+DATABASE_FILE = 'data.db'
+
+def create_database():
+    conn = sqlite3.connect(DATABASE_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS entries
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                 category TEXT,
+                 title TEXT, 
+                 username TEXT, 
+                 password TEXT,
+                 website TEXT,
+                 important_date TEXT,
+                 credit_card TEXT,
+                 secret TEXT,
+                 calendar_event TEXT,
+                 contact_info TEXT,
+                 device_username TEXT,
+                 device_password TEXT,
+                 birthday TEXT)''')
+    conn.commit()
+    conn.close()
+
+def add_entry(category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday):
+    conn = sqlite3.connect(DATABASE_FILE)
+    c = conn.cursor()
+    c.execute("INSERT INTO entries (category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday))
+    conn.commit()
+    conn.close()
+
+def retrieve_entry(title):
+    conn = sqlite3.connect(DATABASE_FILE)
+    c = conn.cursor()
+    c.execute("SELECT * FROM entries WHERE title=?", (title,))
+    entry = c.fetchone()
+    conn.close()
+    return entry
+
+def authenticate(username, password):
+    if username == "your_username" and password == "your_password":  # Replace with your actual username and password
+        return True
+    return False
+
+def main():
+    create_database()
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+    if not authenticate(username, password):
+        print("Incorrect username or password. Access denied.")
+        return
+
+    print("Welcome, " + username + "!")
+    print("Choose an option:")
+    print("1. Add new entry")
+    print("2. Retrieve entry")
+    choice = input("Enter your choice: ")
+
+    if choice == "1":
+        category = input("Enter category: ")
+        title = input("Enter title: ")
+        username = input("Enter username: ")
+        password = input("Enter password: ")
+        website = input("Enter website: ")
+        important_date = input("Enter important date: ")
+        credit_card = input("Enter credit card information: ")
+        secret = input("Enter secret information: ")
+        calendar_event = input("Enter calendar event: ")
+        contact_info = input("Enter contact information: ")
+        device_username = input("Enter device username: ")
+        device_password = input("Enter device password: ")
+        birthday = input("Enter birthday: ")
+        add_entry(category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday)
+        print("Entry added successfully!")
+    elif choice == "2":
+        title = input("Enter title to retrieve: ")
+        entry = retrieve_entry(title)
+        if entry:
+            print("Category:", entry[1])
+            print("Title:", entry[2])
+            print("Username:", entry[3])
+            print("Password:", entry[4])
+            print("Website:", entry[5])
+            print("Important Date:", entry[6])
+            print("Credit Card Information:", entry[7])
+            print("Secret:", entry[8])
+            print("Calendar Event:", entry[9])
+            print("Contact Information:", entry[10])
+            print("Device Username:", entry[11])
+            print("Device Password:", entry[12])
+            print("Birthday:", entry[13])
+        else:
+            print("Entry not found.")
+    else:
+        print("Invalid choice.")
+
+if __name__ == "__main__":
+    main()
