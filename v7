@@ -1,0 +1,243 @@
+import sqlite3
+import os
+import tkinter as tk
+from tkinter import filedialog
+from getpass import getpass
+from fpdf import FPDF
+from docx import Document
+import PyPDF2
+
+DATABASE_FILE = 'data.db'
+EXPORT_FOLDER = 'export'
+IMPORT_FOLDER = 'import'
+
+def create_database():
+    conn = sqlite3.connect(DATABASE_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS entries
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                 category TEXT,
+                 title TEXT, 
+                 username TEXT, 
+                 password TEXT,
+                 website TEXT,
+                 important_date TEXT,
+                 credit_card TEXT,
+                 secret TEXT,
+                 calendar_event TEXT,
+                 contact_info TEXT,
+                 device_username TEXT,
+                 device_password TEXT,
+                 birthday TEXT)''')
+    conn.commit()
+    conn.close()
+
+def add_entry(category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday):
+    conn = sqlite3.connect(DATABASE_FILE)
+    c = conn.cursor()
+    c.execute("INSERT INTO entries (category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday))
+    conn.commit()
+    conn.close()
+
+def retrieve_entry(title):
+    conn = sqlite3.connect(DATABASE_FILE)
+    c = conn.cursor()
+    c.execute("SELECT * FROM entries WHERE title=?", (title,))
+    entry = c.fetchone()
+    conn.close()
+    return entry
+
+def authenticate(username, password):
+    if username == "your_username" and password == "your_password":  # Replace with your actual username and password
+        return True
+    return False
+
+def export_to_pdf(data):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    for key, value in data.items():
+        pdf.cell(200, 10, txt=key + ": " + value, ln=True, align="L")
+    export_folder = os.path.join(os.getcwd(), EXPORT_FOLDER)
+    os.makedirs(export_folder, exist_ok=True)
+    pdf_file = os.path.join(export_folder, "exported_data.pdf")
+    pdf.output(pdf_file)
+    return pdf_file
+
+def import_from_docx(file_path):
+    doc = Document(file_path)
+    entries = []
+    for paragraph in doc.paragraphs:
+        entries.append(paragraph.text.strip())
+    return entries
+
+def import_from_txt(file_path):
+    with open(file_path, 'r') as file:
+        entries = file.readlines()
+    return entries
+
+def import_from_pdf(file_path):
+    entries = []
+    with open(file_path, 'rb') as file:
+        pdf_reader = PyPDF2.PdfFileReader(file)
+        for page_num in range(pdf_reader.numPages):
+            page = pdf_reader.getPage(page_num)
+            entries.append(page.extractText().strip())
+    return entries
+
+def import_entry(entry):
+    add_entry(*entry)
+
+def select_file():
+    root = tk.Tk()
+    root.withdraw()
+    file_path = filedialog.askopenfilename()
+    return file_path
+
+def main():
+    create_database()
+    username = input("Enter username: ")
+    password = getpass("Enter password: ")
+    if not authenticate(username, password):
+        print("Incorrect username or password. Access denied.")
+        return
+
+    print("Welcome, " + username + "!")
+    while True:
+        print("\nChoose an option:")
+        print("1. Add new entry")
+        print("2. Retrieve entry")
+        print("3. Export retrieved entry")
+        print("4. Import entry")
+        print("5. Exit")
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            category = input("Enter category: ")
+            title = input("Enter title: ")
+            username = input("Enter username: ")
+            password = getpass("Enter password: ")
+            website = input("Enter website: ")
+            important_date = input("Enter important date: ")
+            credit_card = input("Enter credit card information: ")
+            secret = input("Enter secret information: ")
+            calendar_event = input("Enter calendar event: ")
+            contact_info = input("Enter contact information: ")
+            device_username = input("Enter device username: ")
+            device_password = getpass("Enter device password: ")
+            birthday = input("Enter birthday: ")
+            add_entry(category, title, username, password, website, important_date, credit_card, secret, calendar_event, contact_info, device_username, device_password, birthday)
+            print("Entry added successfully!")
+        elif choice == "2":
+            title = input("Enter title to retrieve: ")
+            entry = retrieve_entry(title)
+            if entry:
+                print("\nCategory:", entry[1])
+                print("Title:", entry[2])
+                print("Username:", entry[3])
+                # Password is hidden
+                print("Website:", entry[5])
+                print("Important Date:", entry[6])
+                print("Credit Card Information:", entry[7])
+                print("Secret:", entry[8])
+                print("Calendar Event:", entry[9])
+                print("Contact Information:", entry[10])
+                print("Device Username:", entry[11])
+                # Device password is hidden
+                print("Birthday:", entry[13])
+                export_choice = input("\nDo you want to export this entry? (yes/no): ")
+                if export_choice.lower() == "yes":
+                    data = {
+                        "Category": entry[1],
+                        "Title": entry[2],
+                        "Username": entry[3],
+                        "Website": entry[5],
+                        "Important Date": entry[6],
+                        "Credit Card Information": entry[7],
+                        "Secret": entry[8],
+                        "Calendar Event": entry[9],
+                        "Contact Information": entry[10],
+                        "Device Username": entry[11],
+                        "Birthday": entry[13]
+                    }
+                    pdf_file = export_to_pdf(data)
+                    print("Entry exported to:", pdf_file)
+                    view_export_choice = input("Do you want to view the exported file? (yes/no): ")
+                    if view_export_choice.lower() == "yes":
+                        os.system(pdf_file)
+            else:
+                print("Entry not found.")
+        elif choice == "3":
+            print("Export options:")
+            print("1. View exported file")
+            print("2. Add new entry")
+            print("3. Retrieve entry")
+            export_choice = input("Enter your choice: ")
+            if export_choice == "1":
+                export_folder = os.path.join(os.getcwd(), EXPORT_FOLDER)
+                pdf_file = os.path.join(export_folder, "exported_data.pdf")
+                os.system(pdf_file)
+            elif export_choice == "2":
+                continue
+            elif export_choice == "3":
+                title = input("Enter title to retrieve: ")
+                entry = retrieve_entry(title)
+                if entry:
+                    print("\nCategory:", entry[1])
+                    print("Title:", entry[2])
+                    print("Username:", entry[3])
+                    # Password is hidden
+                    print("Website:", entry[5])
+                    print("Important Date:", entry[6])
+                    print("Credit Card Information:", entry[7])
+                    print("Secret:", entry[8])
+                    print("Calendar Event:", entry[9])
+                    print("Contact Information:", entry[10])
+                    print("Device Username:", entry[11])
+                    # Device password is hidden
+                    print("Birthday:", entry[13])
+                else:
+                    print("Entry not found.")
+        elif choice == "4":
+            print("Import options:")
+            print("1. Import from .docx")
+            print("2. Import from .txt")
+            print("3. Import from .pdf")
+            import_choice = input("Enter your choice: ")
+            import_folder = os.path.join(os.getcwd(), IMPORT_FOLDER)
+            os.makedirs(import_folder, exist_ok=True)
+            if import_choice == "1":
+                file_path = select_file()
+                if file_path.endswith('.docx'):
+                    entries = import_from_docx(file_path)
+                    for entry in entries:
+                        import_entry(eval(entry))
+                    print("Entries imported successfully!")
+                else:
+                    print("Invalid file format.")
+            elif import_choice == "2":
+                file_path = select_file()
+                if file_path.endswith('.txt'):
+                    entries = import_from_txt(file_path)
+                    for entry in entries:
+                        import_entry(eval(entry))
+                    print("Entries imported successfully!")
+                else:
+                    print("Invalid file format.")
+            elif import_choice == "3":
+                file_path = select_file()
+                if file_path.endswith('.pdf'):
+                    entries = import_from_pdf(file_path)
+                    for entry in entries:
+                        import_entry(eval(entry))
+                    print("Entries imported successfully!")
+                else:
+                    print("Invalid file format.")
+        elif choice == "5":
+            print("Exiting program.")
+            break
+        else:
+            print("Invalid choice.")
+
+if __name__ == "__main__":
+    main()
